@@ -3,21 +3,24 @@ import window
 from datetime import datetime, timedelta
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+import asyncio
+from concurrent.futures.thread import ThreadPoolExecutor
 import json as js
 
 class VentuskyParser:
-    def __init__(self, locations, hours, forecast_types, screenshotsDir, forecast_interval=3, delta=1):
-        self.driver = VentuskyParser.create_driver()
+    def __init__(self, locations, hours, fTypes, screenshotsDir, fInterval=3, delta=1):
+        self.driver = self.create_driver()
         self.locations = locations
         self.hours = hours
-        self.forecast_types = forecast_types
-        self.forecast_interval = forecast_interval
+        self.fTypes = fTypes
+        self.fInterval = fInterval
         self.delta = delta
         self.dir = screenshotsDir
+
+        self.urls = {}
+        self.create_url()
+
 
         # списки id и xpath элементов интерфейса ventusky, которые мы удаляем,
         # чтобы сделать скриншоты
@@ -25,7 +28,7 @@ class VentuskyParser:
         self.invis_xpath_elements = ["/html/body/menu", "/html/body/div[3]", "/html/body/div[4]", "/html/body/a[1]",
                                 "/html/body/a[2]"]
 
-    def create_driver():
+    def create_driver(self):
         chrome_options = Options()
         chrome_options.add_argument("--headless")
         # chrome_options.add_argument("--disable-gpu")
@@ -38,6 +41,7 @@ class VentuskyParser:
         return driver
 
     # генератор чисел +1
+    @staticmethod
     def gen(n=1):
         while True:
             yield str(n)
@@ -66,17 +70,21 @@ class VentuskyParser:
             self.driver.execute_script("arguments[0].setAttribute('style','display: none')", e)
 
     # для каждого location генерим url
-    def create_url(self, name, coords):
-        for fType in self.forecast_types:
-            num_gen = VentuskyParser.gen()  # создаем генератор чисел
-            for delta in range(1, self.forecast_interval + 1):
-                for hour in self.hours.values():
-                    date = self.get_tomorrow()
-                    url = f"https://www.ventusky.com/?p={coords};4&l={fType}&t={date}/{hour}"
-                    print(url)
-                    self.drive_url(url, name, fType, num_gen)
+    def create_url(self):
+        for locationName, coords in self.locations.items():
+            for fType in self.fTypes:
+                num_gen = VentuskyParser.gen()  # создаем генератор чисел
+                for delta in range(1, self.fInterval + 1):
+                    for hour in self.hours.values():
+                        date = self.get_tomorrow()
+                        url = f"https://www.ventusky.com/?p={coords};4&l={fType}&t={date}/{hour}"
+                        print(url)
+                        screenshot_name = f"{locationName}_{self.fTypes[fType]}_{next(num_gen)}.png"
+                        self.urls[url] = screenshot_name
 
-    def drive_url(self, url, locationName, fType, num_gen):
+    # делает скрин по указанному url и сохраняет под именем screenshotName
+    def drive_url(self, url, screenshotName):
+        print(screenshotName)
         self.driver.get(url)
         # ждем, пока загрузится
         while True:
@@ -95,8 +103,13 @@ class VentuskyParser:
         self.set_invisible_by_xpath()
         self.set_invisible_by_id()
 
-        screenshot_name = f"{locationName}_{self.forecast_types[fType]}_{next(num_gen)}.png"
-        self.driver.get_screenshot_as_file(f"{self.dir}/{screenshot_name}")
+        self.driver.get_screenshot_as_file(f"{self.dir}/{screenshotName}")
+
+    def launch_driver(self):
+        for url, screenshotName in self.urls.items():
+            self.drive_url(url, screenshotName)
+
+
 
 with open('locations.json', 'r', encoding='utf-8') as f:
     locations = js.load(f)
@@ -107,8 +120,7 @@ fTypes = window.Window.forecast_types
 
 
 parser = VentuskyParser(locations, hours, fTypes, dir, 1)
-for name, coords in locations.items():
-    parser.create_url(name, coords)
+parser.launch_driver()
 
 
 # тестируем небольшие идейки
