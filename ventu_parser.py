@@ -1,28 +1,19 @@
 
-import window
 from datetime import datetime, timedelta
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
 import asyncio
 from concurrent.futures.thread import ThreadPoolExecutor
-import json as js
+
 
 class VentuskyParser:
-    def __init__(self, configs, hours, fTypes, screenshotsDir, fInterval=3, delta=1):
+    def __init__(self, configs, hours, fTypes, screenshotsDir, fInterval=3):
         self.driver = self.create_driver()
-        self.configs = {
-            "СФО-УФО": {
-                "coords": "57.7;84.0",
-                "scale": 4,
-                "width": 1160,
-                "height": 680
-            },
-        }
+        self.configs = configs
         self.hours = hours
         self.fTypes = fTypes
         self.fInterval = fInterval
-        self.delta = delta
         self.dir = screenshotsDir
 
         self.urls = {}
@@ -61,8 +52,8 @@ class VentuskyParser:
         return a == ""
 
     # функция возвращает дату сегодня + delta дней в формате ГГГГ.мм.дд
-    def get_tomorrow(self):
-        today = datetime.today() + timedelta(days=self.delta)
+    def get_tomorrow(self, delta):
+        today = datetime.today() + timedelta(days=delta)
         return today.strftime('%Y%m%d')
 
     # делаем невидимыми переданные элементы страницы
@@ -85,9 +76,8 @@ class VentuskyParser:
                 num_gen = VentuskyParser.gen()  # создаем генератор чисел
                 for delta in range(1, self.fInterval + 1):
                     for hour in self.hours.values():
-                        date = self.get_tomorrow()
+                        date = self.get_tomorrow(delta)
                         url = f"https://www.ventusky.com/?p={coords};{scale}&l={fType}&t={date}/{hour}"
-                        print(url)
                         screenshot_name = f"{locationName}_{self.fTypes[fType]}_{next(num_gen)}.png"
                         self.urls[url] = (screenshot_name, width, height)
 
@@ -119,16 +109,5 @@ class VentuskyParser:
             screenshotName, width, height = item
             self.driver.set_window_size(width, height)
             self.drive_url(url, screenshotName)
+        self.driver.quit()
 
-
-
-with open('locations.json', 'r', encoding='utf-8') as f:
-    configs = js.load(f)
-
-hours = {'06': '0300', '12': '0900', '18': '1500', '24': '2100'}
-dir = window.Window.dir_name
-fTypes = window.Window.forecast_types
-
-parser = VentuskyParser(configs, hours, fTypes, dir, 1)
-parser.launch_driver()
-parser.driver.quit()

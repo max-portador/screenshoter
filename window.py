@@ -9,55 +9,57 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+import sys
 
 
-class Window(object):
+class Window(QtWidgets.QWidget):
     forecast_types = {
         'rain-3h': "Осадки",
         'gust': "Порывы"}
     dir_name = QtCore.QDir.currentPath() + '/Скрины'
 
-    def setupUi(self, MainWindow):
-        MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(320, 275)
-        MainWindow.setMaximumSize(QtCore.QSize(320, 275))
-        self.centralwidget = QtWidgets.QWidget(MainWindow)
-        self.centralwidget.setObjectName("centralwidget")
-        self.horizontalLayout = QtWidgets.QHBoxLayout(self.centralwidget)
-        self.horizontalLayout.setObjectName("horizontalLayout")
-        self.verticalLayout = QtWidgets.QVBoxLayout()
-        self.verticalLayout.setObjectName("verticalLayout")
-        self.checkBox_prep = QtWidgets.QCheckBox(self.centralwidget)
-        self.checkBox_prep.setObjectName("checkBox_prep")
+    def __init__(self, ventu_parser, parent=None):
+        QtWidgets.QWidget.__init__(self, parent)
+
+        self.ventuParser = ventu_parser
+
+        self.setWindowTitle("Нарезатель слайдов")
+        self.resize(320, 275)
+        self.setMaximumSize(QtCore.QSize(320, 275))
+
+        self.checkBox_prep = QtWidgets.QCheckBox("Осадки")
         self.checkBox_prep.toggle()
         self.checkBox_prep.stateChanged.connect(self.add_or_del_prep)
-        self.verticalLayout.addWidget(self.checkBox_prep, 0, QtCore.Qt.AlignHCenter)
-        self.checkBox_gust = QtWidgets.QCheckBox(self.centralwidget)
+
+        self.vbox = QtWidgets.QVBoxLayout()
+
+        self.vbox.addWidget(self.checkBox_prep, 0, QtCore.Qt.AlignHCenter)
+
+        self.checkBox_gust = QtWidgets.QCheckBox("Порывы ветра")
         self.checkBox_gust.setMaximumSize(QtCore.QSize(16777215, 130))
-        self.checkBox_gust.setObjectName("checkBox_gust")
         self.checkBox_gust.toggle()
         self.checkBox_gust.stateChanged.connect(self.add_or_del_gust)
-        self.verticalLayout.addWidget(self.checkBox_gust, 0, QtCore.Qt.AlignHCenter)
-        self.btn_choose_dir = QtWidgets.QPushButton(self.centralwidget)
-        self.btn_choose_dir.setObjectName("Выбрать каталог")
+
+        self.vbox.addWidget(self.checkBox_gust, 0, QtCore.Qt.AlignHCenter)
+
+        self.btn_choose_dir = QtWidgets.QPushButton("Выбрать папку")
         self.btn_choose_dir.clicked.connect(self.choose_dir)
-        self.verticalLayout.addWidget(self.btn_choose_dir)
-        self.btnStart = QtWidgets.QPushButton(self.centralwidget)
-        self.btnStart.setObjectName("Запуск")
+
+        self.vbox.addWidget(self.btn_choose_dir)
+
+        self.btnStart = QtWidgets.QPushButton("Запуск")
         self.btnStart.clicked.connect(self.on_start)
-        self.verticalLayout.addWidget(self.btnStart)
-        self.horizontalLayout.addLayout(self.verticalLayout)
+
+        self.vbox.addWidget(self.btnStart)
+        # self.hbox.addLayout(self.vbox)
 
         self.label = QtWidgets.QLabel(Window.dir_name)
-        self.verticalLayout.addWidget(self.label, 0, QtCore.Qt.AlignHCenter)
-        MainWindow.setCentralWidget(self.centralwidget)
+        self.vbox.addWidget(self.label, 0, QtCore.Qt.AlignHCenter)
 
-        self.retranslateUi(MainWindow)
-        QtCore.QMetaObject.connectSlotsByName(MainWindow)
+        self.setLayout(self.vbox)
 
     def choose_dir(self):
-        Window.dir_name = QtWidgets.QFileDialog.getExistingDirectory(parent=window,
-                                                             directory=Window.dir_name)
+        Window.dir_name = QtWidgets.QFileDialog.getExistingDirectory(directory=Window.dir_name)
         self.label.setText(Window.dir_name)
 
     def add_or_del_prep(self, state):
@@ -75,22 +77,5 @@ class Window(object):
                 Window.forecast_types.pop('gust')
 
     def on_start(self):
-        print(Window.forecast_types)
+        self.ventuParser.launch_driver()
 
-    def retranslateUi(self, MainWindow):
-        _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "Нарезатель слайдов"))
-        self.checkBox_prep.setText(_translate("MainWindow", "Осадки"))
-        self.checkBox_gust.setText(_translate("MainWindow", "Порывы ветра"))
-        self.btn_choose_dir.setText(_translate("MainWindow", "Выбрать папку"))
-        self.btnStart.setText(_translate("MainWindow", "Запустить"))
-
-
-if __name__ == '__main__':
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    window = QtWidgets.QMainWindow()
-    ui = Window()
-    ui.setupUi(window)
-    window.show()
-    sys.exit(app.exec_())
