@@ -68,6 +68,7 @@ class Window(QtWidgets.QWidget):
         else:
             if 'rain-3h' in Window.forecast_types.keys():
                 Window.forecast_types.pop('rain-3h')
+        self.ventuParser.fTypes = self.forecast_types
 
     def add_or_del_gust(self, state):
         if state == QtCore.Qt.Checked:
@@ -75,6 +76,8 @@ class Window(QtWidgets.QWidget):
         else:
             if 'gust' in Window.forecast_types.keys():
                 Window.forecast_types.pop('gust')
+        self.ventuParser.fTypes = self.forecast_types
+
 
     def on_start(self):
         self.ventuParser.launch_driver()

@@ -17,7 +17,6 @@ class VentuskyParser:
         self.dir = screenshotsDir
 
         self.urls = {}
-        self.create_url()
 
 
         # списки id и xpath элементов интерфейса ventusky, которые мы удаляем,
@@ -105,6 +104,7 @@ class VentuskyParser:
         self.driver.get_screenshot_as_file(f"{self.dir}/{screenshotName}")
 
     def launch_driver(self):
+        self.create_url()
         for url, item in self.urls.items():
             screenshotName, width, height = item
             self.driver.set_window_size(width, height)
