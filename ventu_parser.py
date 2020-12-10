@@ -109,5 +109,9 @@ class VentuskyParser:
             screenshotName, width, height = item
             self.driver.set_window_size(width, height)
             self.drive_url(url, screenshotName)
-        self.driver.quit()
+        try:
+            self.driver.close()
+            self.driver.quit()
+        except ConnectionRefusedError:
+            pass
 

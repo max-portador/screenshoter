@@ -1,6 +1,7 @@
-import ventu_parser, os, time
+import ventu_parser, os
 from datetime import datetime, timedelta
-
+from selenium.webdriver.chrome.options import Options
+from selenium import webdriver
 
 class WindyParser(ventu_parser.VentuskyParser):
     def __init__(self, configs, hours, fTypes, screenshotsDir, fInterval=3):
@@ -22,6 +23,11 @@ class WindyParser(ventu_parser.VentuskyParser):
         today = datetime.today() + timedelta(days=delta)
         return today.strftime('%Y-%m-%d')
 
+    # проверяет, загрузилась ли анимация погоды
+    def is_loaded(self):
+        body = self.driver.find_element_by_xpath("/html/body")
+        return "load" not in body.get_attribute("class")
+
     def create_url(self):
         for locationName, params in self.configs.items():
             coords, scale, width, height = params.values()
@@ -35,35 +41,27 @@ class WindyParser(ventu_parser.VentuskyParser):
                         screenshot_name = f"{locationName}_{self.fTypes[fType]}_{next(num_gen)}.png"
                         self.urls[url] = (screenshot_name, width, height)
 
-    def drive_url(self, url):
-        self.driver.get(url)
-        # ждем, пока загрузится
-        i = 0
-        while i < 5:
-            body = self.driver.find_element_by_xpath(xpath)
-            print(body.get_attribute("class"))
-            time.sleep(0.1)
-            i += 1
 
-#
+
+# ----------------------------------------
+
 fTypes = {"-Precip-type-ptype?ptype": "Тип осадков"}
 hours = ["15"]
 coord = "60.744,49.421"
-scale = "5"
-xpath = """/html/body"""
+scale = "4"
 class_name = "loading-path"
 
 configs = {"Test": {
-    "coords": "60.744,49.421",
+    "coords": "55.744,45.421",
     "scale": 5,
     "width": 1000,
     "height": 600
 }}
-parser = WindyParser(configs, hours, fTypes, os.curdir)
+# ---------------------------------------------------
+
+parser = WindyParser(configs, hours, fTypes, f"{os.curdir}/Скрины", 4)
 parser.create_url()
 for url in parser.urls.keys():
-    print("-"*50)
-    parser.drive_url(url)
-
+    parser.launch_driver()
 
 
