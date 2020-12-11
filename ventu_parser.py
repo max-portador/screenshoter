@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
+from urllib3.exceptions import MaxRetryError
 import asyncio
 from concurrent.futures.thread import ThreadPoolExecutor
 
@@ -10,8 +11,15 @@ from concurrent.futures.thread import ThreadPoolExecutor
 class VentuskyParser:
     def __init__(self, configs, hours, fTypes, screenshotsDir, fInterval=3):
         self.driver = self.create_driver()
-        self.configs = configs
-        self.hours = hours
+        # self.configs = configs
+        self.configs = {"ЦФО-СЗФО-ПФО": {
+            "coords": "60.2;37.1",
+            "scale": 4,
+            "width": 1100,
+            "height": 795
+                          }
+        }
+        self.hours = {'06': '0300'}
         self.fTypes = fTypes
         self.fInterval = fInterval
         self.dir = screenshotsDir
@@ -105,13 +113,13 @@ class VentuskyParser:
 
     def launch_driver(self):
         self.create_url()
-        for url, item in self.urls.items():
-            screenshotName, width, height = item
-            self.driver.set_window_size(width, height)
-            self.drive_url(url, screenshotName)
         try:
-            self.driver.close()
-            self.driver.quit()
-        except ConnectionRefusedError:
+            for url, item in self.urls.items():
+                screenshotName, width, height = item
+                self.driver.set_window_size(width, height)
+                self.drive_url(url, screenshotName)
+        except MaxRetryError:
             pass
+        finally:
+            print("Все загружено!")
 
