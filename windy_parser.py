@@ -1,6 +1,7 @@
-import ventu_parser, os, urllib3
+import ventu_parser, os
 from datetime import datetime, timedelta
-
+from selenium.webdriver.chrome.options import Options
+from selenium import webdriver
 
 class WindyParser(ventu_parser.VentuskyParser):
     def __init__(self, configs, hours, fTypes, screenshotsDir, fInterval=3):
@@ -10,14 +11,13 @@ class WindyParser(ventu_parser.VentuskyParser):
         self.fTypes = fTypes
         self.fInterval = fInterval
         self.dir = screenshotsDir
-        self.disabledParticlesAnimation = True
 
         self.urls = {}
 
         # списки id и xpath элементов интерфейса ventusky, которые мы удаляем,
         # чтобы сделать скриншоты
         self.invis_id_elements = ["search", "bottom", "rh-icons", "logo", "rh-bottom", "rhpane"]
-        self.invis_xpath_elements = ["/html/body/div[1]/div[1]/div[1]/canvas"]
+        self.invis_xpath_elements = []
 
     def get_tomorrow(self, delta):
         today = datetime.today() + timedelta(days=delta)
@@ -41,6 +41,8 @@ class WindyParser(ventu_parser.VentuskyParser):
                         screenshot_name = f"{locationName}_{self.fTypes[fType]}_{next(num_gen)}.png"
                         self.urls[url] = (screenshot_name, width, height)
 
+
+
 # ----------------------------------------
 
 fTypes = {"-Precip-type-ptype?ptype": "Тип осадков"}
@@ -60,7 +62,6 @@ configs = {"Test": {
 parser = WindyParser(configs, hours, fTypes, f"{os.curdir}/Скрины", 4)
 parser.create_url()
 for url in parser.urls.keys():
-    try:
-        parser.launch_driver()
-    except urllib3.exceptions.MaxRetryError:
-        pass
+    parser.launch_driver()
+
+
