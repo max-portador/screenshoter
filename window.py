@@ -49,8 +49,11 @@ class Window(QtWidgets.QWidget):
 
         self.btnStart = QtWidgets.QPushButton("Запуск")
         self.btnStart.clicked.connect(self.on_start)
+        self.btnGismeteo = QtWidgets.QPushButton("Загрузить с Gismeteo")
+        self.btnGismeteo.clicked.connect(self.get_gismeteo)
 
         self.vbox.addWidget(self.btnStart)
+        self.vbox.addWidget(self.btnGismeteo)
         # self.hbox.addLayout(self.vbox)
 
         self.label = QtWidgets.QLabel(Window.dir_name)
@@ -82,4 +85,7 @@ class Window(QtWidgets.QWidget):
 
     def on_start(self):
         self.ventuParser.launch_driver()
+
+    def get_gismeteo(self):
+        self.ventuParser.get_gismeteo()
 

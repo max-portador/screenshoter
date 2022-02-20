@@ -4,6 +4,8 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from gismeteo_urls import gismeteo_urls
+from PIL import Image
 
 css_selector_settings = "#menu-settings > a"
 css_selector_checkbox = "#settings-colors > div.resp_table > div > label > div.resp_table_cell.cell2 > input[type=checkbox]"
@@ -156,3 +158,33 @@ class VentuskyParser:
         except ConnectionRefusedError:
             pass
 
+    def get_gismeteo(self):
+        urls = self.create_dirs_and_urls()
+        self.driver.set_window_size(2000, 1400)
+        for pair in urls:
+            saving_name = pair["saving_name"]
+            self.driver.get(pair["url"])
+            self.driver.get_screenshot_as_file(saving_name)
+            with Image.open(saving_name) as img:
+                try:
+                    box = (114, 447, 933, 873)
+                    part = img.crop(box)
+                    # os.remove(saving_name)
+                    part.save(saving_name)
+                except Exception as e:
+                    print(e)
+
+
+    def create_dirs_and_urls(self):
+        urls = []
+        for FO, pairs in gismeteo_urls.items():
+            sub_dir = os.path.join(self.dir, FO)
+
+            if not os.path.exists(sub_dir):
+                os.mkdir(sub_dir)
+
+            for city, url in pairs.items():
+                saving_name = os.path.join(sub_dir, f'gismeteo {city}.png')
+                urls.append({"url": url, "saving_name": saving_name})
+
+        return urls
