@@ -1,3 +1,13 @@
+import io
+from time import sleep
+
+from PIL import Image
+from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.by import By
+from urllib3.exceptions import MaxRetryError
+from Screenshot import Screenshot_Clipping
+ss = Screenshot_Clipping.Screenshot()
+
 import ventu_parser, os
 from datetime import datetime, timedelta
 from selenium.webdriver.chrome.options import Options
@@ -21,12 +31,16 @@ class WindyParser(ventu_parser.VentuskyParser):
 
     def get_tomorrow(self, delta):
         today = datetime.today() + timedelta(days=delta)
-        return today.strftime('%Y-%m-%d')
+        return today.strftime('%Y%m%d')
 
     # проверяет, загрузилась ли анимация погоды
     def is_loaded(self):
-        body = self.driver.find_element_by_xpath("/html/body")
-        return "load" not in body.get_attribute("class")
+        try:
+            body = self.driver.find_element(By.CSS_SELECTOR, "body")
+            sleep(1)
+            return "selectedpois-favs" in body.get_attribute("class")
+        except NoSuchElementException:
+            return False
 
     def create_url(self):
         for locationName, params in self.configs.items():
@@ -37,29 +51,67 @@ class WindyParser(ventu_parser.VentuskyParser):
                 for delta in range(1, self.fInterval + 1):
                     for hour in self.hours:
                         date = self.get_tomorrow(delta)
-                        url = f"https://www.windy.com/{fType},{date}-{hour},{coord},{scale}"
-                        screenshot_name = f"{locationName}_{self.fTypes[fType]}_{next(num_gen)}.png"
+                        print(date)
+                        url = f"https://www.windy.com/ru/{fType},{date}{hour},{coords},{scale}"
+                        screenshot_name = os.path.join(self.dir, locationName, f"{self.fTypes[fType]}{next(num_gen)}.png")
                         self.urls[url] = (screenshot_name, width, height)
 
+    def launch_driver(self):
+        self.create_url()
+        for url, item in self.urls.items():
+            screenshotName, width, height = item
+            self.driver.set_window_size(width, height)
+            try:
+                self.drive_url(url, screenshotName)
+            except Exception:
+                pass
 
+        try:
+            self.driver.close()
+            self.driver.quit()
+        except Exception:
+            pass
+
+
+    def drive_url(self, url, screenshotName):
+        self.driver.get(url)
+        # ждем, пока загрузится
+        while True:
+            if self.is_loaded():
+                break
+        # если появится промо, то удаляем его
+        try:
+            promo = self.driver.find_element(By.ID, "news")
+            self.driver.execute_script("""var element = arguments[0];
+                                                 element.parentNode.removeChild(element);""", promo)
+        except NoSuchElementException:
+            pass
+
+        # делаем элементы меню сделать невидимыми
+        self.set_invisible_by_xpath()
+        self.set_invisible_by_id()
+        head, tail = os.path.split(screenshotName)
+        if not os.path.exists(head):
+            os.mkdir(head)
+        ss.full_Screenshot(self.driver, save_path=head, image_name=tail)
+
+        # body = self.driver.find_element(By.CSS_SELECTOR, "body")
+        # image = body.screenshot_as_png()
+        # print(image)
+        # imageStream = io.BytesIO(image)
+        # im = Image.open(imageStream)
+        # im.save(screenshotName)
+
+        # self.driver.get_screenshot_as_file(screenshotName)
+        # sleep(1)
 
 # ----------------------------------------
 
-fTypes = {"-Precip-type-ptype?ptype": "Тип осадков"}
-hours = ["15"]
-coord = "60.744,49.421"
-scale = "4"
-class_name = "loading-path"
 
-configs = {"Test": {
-    "coords": "55.744,45.421",
-    "scale": 5,
-    "width": 1000,
-    "height": 600
-}}
 # ---------------------------------------------------
+from windy_config import configs, hours, fTypes
 
-parser = WindyParser(configs, hours, fTypes, f"{os.curdir}/Скрины", 4)
+parser = WindyParser(configs, hours, fTypes, os.curdir, 1)
 parser.create_url()
 for url in parser.urls.keys():
     parser.launch_driver()

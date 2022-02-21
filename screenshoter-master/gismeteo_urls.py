@@ -33,3 +33,4 @@ gismeteo_urls = {
         "Ставрополь": "https://www.gismeteo.ru/weather-stavropol-5141/10-days/",
     }
 }
+
