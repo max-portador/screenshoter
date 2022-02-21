@@ -1,4 +1,5 @@
 import os.path
+import sys
 from datetime import datetime, timedelta
 from time import sleep
 
@@ -9,6 +10,7 @@ from selenium.webdriver.common.by import By
 from gismeteo_urls import gismeteo_urls
 from PIL import Image
 
+path_to_driver = "./chromedriver" if sys.platform == 'linux' else "./chromedriver.exe"
 
 css_selector_settings = "#menu-settings > a"
 css_selector_checkbox = "#settings-colors > div.resp_table > div > label > div.resp_table_cell.cell2 > input[type=checkbox]"
@@ -48,7 +50,7 @@ class VentuskyParser:
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--enable-automation")
         chrome_options.add_argument("window-size=2000,1400")
-        driver = webdriver.Chrome("./chromedriver", options=chrome_options)
+        driver = webdriver.Chrome(path_to_driver, options=chrome_options)
         driver.maximize_window()
         return driver
 
