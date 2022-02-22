@@ -1,5 +1,8 @@
 import os.path
+import sys
 from datetime import datetime, timedelta
+from time import sleep
+
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
@@ -7,10 +10,13 @@ from selenium.webdriver.common.by import By
 from gismeteo_urls import gismeteo_urls
 from PIL import Image
 
+path_to_driver = "./chromedriver" if sys.platform == 'linux' else "./chromedriver.exe"
+
 css_selector_settings = "#menu-settings > a"
 css_selector_checkbox = "#settings-colors > div.resp_table > div > label > div.resp_table_cell.cell2 > input[type=checkbox]"
 css_selector_closebtn = "#aside_close_btn"
-
+css_selector_basemap = "#x > canvas:nth-child(1)"
+css_selector_boarders = "#x > canvas:nth-child(5)"
 
 
 class VentuskyParser:
@@ -21,6 +27,7 @@ class VentuskyParser:
         self.fTypes = fTypes
         self.fInterval = fInterval
         self.dir = screenshotsDir
+        self.switched_to_mm = False
 
         self.urls = {}
 
@@ -31,18 +38,19 @@ class VentuskyParser:
         self.invis_xpath_elements = ["/html/body/menu", "/html/body/div[3]", "/html/body/div[4]", "/html/body/a[1]",
                                 "/html/body/a[2]"]
 
-    def set_screenshot_dir(self, new_dir):
+    def set_dir(self, new_dir):
         self.dir = new_dir
 
     def create_driver(self):
         chrome_options = Options()
+        # РАСКОМЕНТИРОВАТЬ СТРОКУ ДЛЯ РАБОТЫ В ФОНОВОМ РЕЖИМЕ
         # chrome_options.add_argument("--headless")
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--disable-extensions")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--enable-automation")
         chrome_options.add_argument("window-size=2000,1400")
-        driver = webdriver.Chrome("./chromedriver.exe", options=chrome_options)
+        driver = webdriver.Chrome(path_to_driver, options=chrome_options)
         driver.maximize_window()
         return driver
 
@@ -57,6 +65,10 @@ class VentuskyParser:
     def is_loaded(self):
         xx_span = self.driver.find_elements_by_class_name("xx")
         a = xx_span[0].get_attribute("style")
+        try:
+            self.driver.find_element(By.CSS_SELECTOR, css_selector_boarders)
+        except NoSuchElementException:
+            return False
         return a == ""
 
     # функция возвращает дату сегодня + delta дней в формате ГГГГ.мм.дд
@@ -81,6 +93,8 @@ class VentuskyParser:
         close_btn = self.driver.find_element(By.CSS_SELECTOR, css_selector_closebtn)
         close_btn.click()
 
+
+
     # делаем невидимыми переданные элементы страницы
     def set_invisible_by_id(self):
         for html_id in self.invis_id_elements:
@@ -97,13 +111,18 @@ class VentuskyParser:
         for locationName, params in self.configs.items():
             coords, scale, width, height = params.values()
 
+            sub_dir = os.path.join(self.dir, locationName)
+            if not os.path.exists(sub_dir):
+                os.mkdir(sub_dir)
+
             for fType in self.fTypes:
                 num_gen = VentuskyParser.gen()  # создаем генератор чисел
                 for delta in range(1, self.fInterval + 1):
                     for hour in self.hours.values():
                         date = self.get_tomorrow(delta)
                         url = f"https://www.ventusky.com/?p={coords};{scale}&l={fType}&t={date}/{hour}"
-                        screenshot_name = f"{locationName}_{self.fTypes[fType]}_{next(num_gen)}.png"
+                        screenshot_name = os.path.join(sub_dir, f"{self.fTypes[fType]}{next(num_gen)}.png")
+
                         self.urls[url] = (screenshot_name, width, height)
 
             delta_day_3 = self.get_tomorrow(3)
@@ -111,13 +130,13 @@ class VentuskyParser:
             hour = '0600'
 
             url = f"https://www.ventusky.com/?p={coords};{scale}&l={fType}&t={delta_day_3}/{hour}"
-            screenshot_name = f"{locationName}_накопление_осадков_72ч.png"
+            screenshot_name = os.path.join(sub_dir, f"сумм72.png")
             self.urls[url] = (screenshot_name, width, height)
 
             fType ="new-snow-ac"
 
             url = f"https://www.ventusky.com/?p={coords};{scale}&l={fType}&t={delta_day_3}/{hour}"
-            screenshot_name = f"{locationName}_накопление_снега_72ч.png"
+            screenshot_name = os.path.join(sub_dir, f"снег72.png")
             self.urls[url] = (screenshot_name, width, height)
 
     # делает скрин по указанному url и сохраняет под именем screenshotName
@@ -136,12 +155,19 @@ class VentuskyParser:
         except NoSuchElementException:
             pass
 
+        # переключает на м/с, если порывы ветра
+        if not self.switched_to_mm and "gust" in url:
+            scale = self.driver.find_element(By.CSS_SELECTOR, "#h")
+            scale.click()
+            self.switched_to_mm = True
+            sleep(5)
+
         # делаем элементы меню сделать невидимыми
         self.set_invisible_by_xpath()
         self.set_invisible_by_id()
+        self.driver.get_screenshot_as_file(screenshotName)
 
-        saving_dir = os.path.join(self.dir, screenshotName)
-        self.driver.get_screenshot_as_file(saving_dir)
+
 
     def launch_driver(self):
 
@@ -152,6 +178,8 @@ class VentuskyParser:
             self.driver.set_window_size(width, height)
             self.drive_url(url, screenshotName)
 
+
+
         try:
             self.driver.close()
             self.driver.quit()
@@ -161,13 +189,16 @@ class VentuskyParser:
     def get_gismeteo(self):
         urls = self.create_dirs_and_urls()
         self.driver.set_window_size(2000, 1400)
+
         for pair in urls:
             saving_name = pair["saving_name"]
             self.driver.get(pair["url"])
+            print(saving_name)
             self.driver.get_screenshot_as_file(saving_name)
             with Image.open(saving_name) as img:
                 try:
-                    box = (114, 447, 933, 873)
+                    # box = (114, 447, 933, 873)
+                    box = (322, 355, 979, 697)
                     part = img.crop(box)
                     # os.remove(saving_name)
                     part.save(saving_name)
@@ -178,13 +209,17 @@ class VentuskyParser:
     def create_dirs_and_urls(self):
         urls = []
         for FO, pairs in gismeteo_urls.items():
-            sub_dir = os.path.join(self.dir, FO)
+            _sub_dir = os.path.join(self.dir, FO)
 
+            if not os.path.exists(_sub_dir):
+                os.mkdir(_sub_dir)
+
+            sub_dir = os.path.join(_sub_dir, 'Гисметео')
             if not os.path.exists(sub_dir):
                 os.mkdir(sub_dir)
 
             for city, url in pairs.items():
-                saving_name = os.path.join(sub_dir, f'gismeteo {city}.png')
+                saving_name = os.path.join(sub_dir, f'{city}.png')
                 urls.append({"url": url, "saving_name": saving_name})
 
         return urls

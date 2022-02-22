@@ -1,32 +1,26 @@
 {
   "ДФО": {
-    "coords": "59;147",
+    "coords": "57.7;144.6",
   "scale": 3,
-  "width": 1160,
-  "height": 880
+  "width": 1060,
+  "height": 960
   },
   "СФО-УФО": {
-                "coords": "57.7;84.0",
-                "scale": 4,
-                "width": 1160,
-                "height": 680
+          "coords": "59.7;86.5",
+          "scale": 4,
+          "width": 1460,
+          "height": 1000
   },
-  "ПФО": {
-    "coords": "54.3;49.6",
+  "ЦФО-СЗФО": {
+    "coords": "60.7;34.7",
   "scale": 4,
-  "width": 2000,
-  "height": 1400
+  "width": 1300,
+  "height": 1020
   },
   "ЮФО-СКФО": {
-    "coords": "45.1;43.3",
-  "scale": 4,
-  "width": 2000,
-  "height": 1400
-  },
-  "СЗФО-ЦФО": {
-    "coords": "57.6;41.8",
-  "scale": 4,
-  "width": 2000,
-  "height": 1400
+    "coords": "45.4;40.9",
+  "scale": 5,
+  "width": 900,
+  "height": 780
   }
 }

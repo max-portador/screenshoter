@@ -14,8 +14,8 @@ import sys
 
 class Window(QtWidgets.QWidget):
     forecast_types = {
-        'rain-3h': "Осадки",
-        'gust': "Порывы"}
+        'rain-3h': "о",
+        'gust': "в"}
     dir_name = QtCore.QDir.currentPath()
 
     def __init__(self, ventu_parser, parent=None):
@@ -64,7 +64,7 @@ class Window(QtWidgets.QWidget):
     def choose_dir(self):
         Window.dir_name = QtWidgets.QFileDialog.getExistingDirectory(directory=Window.dir_name)
         self.label.setText(Window.dir_name)
-        self.ventuParser.set_screenshot_dir(Window.dir_name)
+        self.ventuParser.set_dir(Window.dir_name)
 
     def add_or_del_prep(self, state):
         if state == QtCore.Qt.Checked:
@@ -88,4 +88,3 @@ class Window(QtWidgets.QWidget):
 
     def get_gismeteo(self):
         self.ventuParser.get_gismeteo()
-
