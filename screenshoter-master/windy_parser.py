@@ -1,17 +1,14 @@
-import io
 from time import sleep
 
 from PIL import Image
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
-from urllib3.exceptions import MaxRetryError
 from Screenshot import Screenshot_Clipping
 ss = Screenshot_Clipping.Screenshot()
 
 import ventu_parser, os
 from datetime import datetime, timedelta
-from selenium.webdriver.chrome.options import Options
-from selenium import webdriver
+import urllib
 
 class WindyParser(ventu_parser.VentuskyParser):
     def __init__(self, configs, hours, fTypes, screenshotsDir, fInterval=3):
@@ -44,15 +41,18 @@ class WindyParser(ventu_parser.VentuskyParser):
 
     def create_url(self):
         for locationName, params in self.configs.items():
-            coords, scale, width, height = params.values()
+            coords = params["coords"]
+            scale = params["scale"]
+            width = params["width"]
+            height = params['height']
 
             for fType in self.fTypes:
+                URIfType = urllib.parse.quote(fType.split("?")[0]) + "?" + fType.split("?")[1]
                 num_gen = WindyParser.gen()  # создаем генератор чисел
                 for delta in range(1, self.fInterval + 1):
                     for hour in self.hours:
                         date = self.get_tomorrow(delta)
-                        print(date)
-                        url = f"https://www.windy.com/ru/{fType},{date}{hour},{coords},{scale}"
+                        url = f"https://www.windy.com/ru/{URIfType},{date}{hour},{coords},{scale}"
                         screenshot_name = os.path.join(self.dir, locationName, f"{self.fTypes[fType]}{next(num_gen)}.png")
                         self.urls[url] = (screenshot_name, width, height)
 
@@ -63,8 +63,8 @@ class WindyParser(ventu_parser.VentuskyParser):
             self.driver.set_window_size(width, height)
             try:
                 self.drive_url(url, screenshotName)
-            except Exception:
-                pass
+            except Exception as e:
+                print(e)
 
         try:
             self.driver.close()
@@ -75,6 +75,10 @@ class WindyParser(ventu_parser.VentuskyParser):
 
     def drive_url(self, url, screenshotName):
         self.driver.get(url)
+
+        timeline = self.driver.find_element(By.CSS_SELECTOR, "#progress-bar > div.progress-line")
+        timeline.get_property("cli")
+
         # ждем, пока загрузится
         while True:
             if self.is_loaded():
@@ -87,6 +91,7 @@ class WindyParser(ventu_parser.VentuskyParser):
         except NoSuchElementException:
             pass
 
+
         # делаем элементы меню сделать невидимыми
         self.set_invisible_by_xpath()
         self.set_invisible_by_id()
@@ -95,23 +100,13 @@ class WindyParser(ventu_parser.VentuskyParser):
             os.mkdir(head)
         ss.full_Screenshot(self.driver, save_path=head, image_name=tail)
 
-        # body = self.driver.find_element(By.CSS_SELECTOR, "body")
-        # image = body.screenshot_as_png()
-        # print(image)
-        # imageStream = io.BytesIO(image)
-        # im = Image.open(imageStream)
-        # im.save(screenshotName)
-
-        # self.driver.get_screenshot_as_file(screenshotName)
-        # sleep(1)
-
 # ----------------------------------------
 
 
 # ---------------------------------------------------
 from windy_config import configs, hours, fTypes
 
-parser = WindyParser(configs, hours, fTypes, os.curdir, 1)
+parser = WindyParser(configs, hours, fTypes, os.curdir, 3)
 parser.create_url()
 for url in parser.urls.keys():
     parser.launch_driver()
