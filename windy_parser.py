@@ -18,7 +18,6 @@ class WindyParser(ventu_parser.VentuskyParser):
         self.fTypes = fTypes
         self.fInterval = fInterval
         self.dir = screenshotsDir
-
         self.urls = {}
 
         # списки id и xpath элементов интерфейса ventusky, которые мы удаляем,
@@ -74,10 +73,10 @@ class WindyParser(ventu_parser.VentuskyParser):
 
 
     def drive_url(self, url, screenshotName):
-        self.driver.get(url)
+        self.driver.get("https://www.windy.com/ru")
 
-        timeline = self.driver.find_element(By.CSS_SELECTOR, "#progress-bar > div.progress-line")
-        timeline.get_property("cli")
+        # timeline = self.driver.find_element(By.CSS_SELECTOR, "#progress-bar > div.progress-line")
+        # timeline.get_property("cli")
 
         # ждем, пока загрузится
         while True:

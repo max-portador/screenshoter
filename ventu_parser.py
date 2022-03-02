@@ -18,6 +18,9 @@ css_selector_closebtn = "#aside_close_btn"
 css_selector_basemap = "#x > canvas:nth-child(1)"
 css_selector_boarders = "#x > canvas:nth-child(5)"
 
+SNOW_ACC = 'new-snow-ac'
+RAIN_ACC = 'rain-ac'
+
 
 class VentuskyParser:
     def __init__(self, configs, hours, fTypes, screenshotsDir, fInterval=3):
@@ -93,7 +96,14 @@ class VentuskyParser:
         close_btn = self.driver.find_element(By.CSS_SELECTOR, css_selector_closebtn)
         close_btn.click()
 
+    # добавить в список url накопление осадков или снега
+    def create_url_by_type_and_time(self, f_type, days, name, coords, scale, sub_dir, width, height):
+        delta = self.get_tomorrow(days)
+        hour = '0600'
 
+        url = f"https://www.ventusky.com/?p={coords};{scale}&l={f_type}&t={delta}/{hour}"
+        screenshot_name = os.path.join(sub_dir, f"{name}.png")
+        self.urls[url] = (screenshot_name, width, height)
 
     # делаем невидимыми переданные элементы страницы
     def set_invisible_by_id(self):
@@ -125,19 +135,14 @@ class VentuskyParser:
 
                         self.urls[url] = (screenshot_name, width, height)
 
-            delta_day_3 = self.get_tomorrow(3)
-            fType = 'rain-ac'
-            hour = '0600'
-
-            url = f"https://www.ventusky.com/?p={coords};{scale}&l={fType}&t={delta_day_3}/{hour}"
-            screenshot_name = os.path.join(sub_dir, f"сумм72.png")
-            self.urls[url] = (screenshot_name, width, height)
-
-            fType ="new-snow-ac"
-
-            url = f"https://www.ventusky.com/?p={coords};{scale}&l={fType}&t={delta_day_3}/{hour}"
-            screenshot_name = os.path.join(sub_dir, f"снег72.png")
-            self.urls[url] = (screenshot_name, width, height)
+            # накопление осадков за 24 часа
+            self.create_url_by_type_and_time(RAIN_ACC, 1, "сумм24", coords, scale, sub_dir, width, height)
+            # накопление  накопления осадков за 72 часа
+            self.create_url_by_type_and_time(RAIN_ACC, 3, "сумм72", coords, scale, sub_dir, width, height)
+            # накопление  накопления снега за 24 часа
+            self.create_url_by_type_and_time(SNOW_ACC, 1, "снег24", coords, scale, sub_dir, width, height)
+            # накопление  накопления снега за 72 часа
+            self.create_url_by_type_and_time(SNOW_ACC, 3, "снег72", coords, scale, sub_dir, width, height)
 
     # делает скрин по указанному url и сохраняет под именем screenshotName
     def drive_url(self, url, screenshotName):
@@ -167,10 +172,7 @@ class VentuskyParser:
         self.set_invisible_by_id()
         self.driver.get_screenshot_as_file(screenshotName)
 
-
-
     def launch_driver(self):
-
         self.create_url()
         self.turn_on_grid()
         for url, item in self.urls.items():
@@ -178,13 +180,11 @@ class VentuskyParser:
             self.driver.set_window_size(width, height)
             self.drive_url(url, screenshotName)
 
-
-
-        try:
-            self.driver.close()
-            self.driver.quit()
-        except ConnectionRefusedError:
-            pass
+        # try:
+        #     self.driver.close()
+        #     self.driver.quit()
+        # except ConnectionRefusedError:
+        #     pass
 
     def get_gismeteo(self):
         urls = self.create_dirs_and_urls()
