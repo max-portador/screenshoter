@@ -193,12 +193,26 @@ class VentuskyParser:
         for pair in urls:
             saving_name = pair["saving_name"]
             self.driver.get(pair["url"])
+            # promo = self.driver.find_element(By.CSS_SELECTOR, "body > section.section-overlay")
+            # self.driver.execute_script("""var element = arguments[0];
+            #                                                  element.parentNode.removeChild(element);""", promo)
+            widget = self.driver.find_element(By.CSS_SELECTOR, "body > section > div.content-column.column1 > section:nth-child(2) > div > div > div")
+
+            location = widget.location
+            size = widget.size
+
+            x1 = int(location['x'])
+            y1 = int(location['y'])
+            width = int(size['width'])
+            height = int(size['height'])
+            x2 = x1 + width
+            y2 = y1 + height
+
             print(saving_name)
             self.driver.get_screenshot_as_file(saving_name)
             with Image.open(saving_name) as img:
                 try:
-                    # box = (114, 447, 933, 873)
-                    box = (322, 355, 979, 697)
+                    box = (x1, y1, x2, y2)
                     part = img.crop(box)
                     # os.remove(saving_name)
                     part.save(saving_name)
