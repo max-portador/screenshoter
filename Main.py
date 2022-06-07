@@ -11,8 +11,7 @@ dir = window.Window.dir_name
 fTypes = window.Window.forecast_types
 
 # на сколько дней делать прогноз
-days = 3
-
+days = 1
 
 parser = ventu_parser.VentuskyParser(configs, hours, fTypes, dir, fInterval=days)
 

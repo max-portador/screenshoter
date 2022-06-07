@@ -13,7 +13,8 @@ from PIL import Image
 path_to_driver = "./chromedriver" if sys.platform == 'linux' else "./chromedriver.exe"
 
 css_selector_settings = "#menu-settings > a"
-css_selector_checkbox = "#settings-colors > div.resp_table > div > label > div.resp_table_cell.cell2 > input[type=checkbox]"
+css_selector_cycloneCenters = '#settings-colors > div.resp_table > div > label:nth-child(1) > div.resp_table_cell.cell2 > input[type=checkbox]'
+css_selector_checkbox = "#settings-colors > div.resp_table > div > label:nth-child(2) > div.resp_table_cell.cell2 > input[type=checkbox]"
 css_selector_closebtn = "#aside_close_btn"
 css_selector_basemap = "#x > canvas:nth-child(1)"
 css_selector_boarders = "#x > canvas:nth-child(5)"
@@ -88,6 +89,10 @@ class VentuskyParser:
         # входим в настройки
         settings_btn = self.driver.find_element(By.CSS_SELECTOR, css_selector_settings)
         settings_btn.click()
+        # убираем галочку отображать значение центров циклонов, если включены
+        cyclone_centers = self.driver.find_element(By.CSS_SELECTOR, css_selector_cycloneCenters)
+        if cyclone_centers.is_selected():
+            cyclone_centers.click()
         # ставим галочку отображать значение в сетке, если не установлено
         check_box = self.driver.find_element(By.CSS_SELECTOR, css_selector_checkbox)
         if not check_box.is_selected():
@@ -196,7 +201,7 @@ class VentuskyParser:
             # promo = self.driver.find_element(By.CSS_SELECTOR, "body > section.section-overlay")
             # self.driver.execute_script("""var element = arguments[0];
             #                                                  element.parentNode.removeChild(element);""", promo)
-            widget = self.driver.find_element(By.CSS_SELECTOR, "body > section > div.content-column.column1 > section:nth-child(2) > div > div > div")
+            widget = self.driver.find_element(By.CSS_SELECTOR, "body > section.content.wrap > div.content-column.column1 > section:nth-child(2) > div > div > div")
 
             location = widget.location
             size = widget.size

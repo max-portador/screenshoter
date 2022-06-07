@@ -15,7 +15,8 @@ import sys
 class Window(QtWidgets.QWidget):
     forecast_types = {
         'rain-3h': "о",
-        'gust': "в"}
+        'gust': "в",
+        'wave': "вол"}
     dir_name = QtCore.QDir.currentPath()
 
     def __init__(self, ventu_parser, parent=None):
